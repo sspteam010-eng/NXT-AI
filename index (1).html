@@ -1,0 +1,701 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NXT AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Login Page Styles */
+    .login-view * { margin: 0; padding: 0; box-sizing: border-box; }
+    .login-view {
+      font-family: 'El Messiri', sans-serif;
+      background: linear-gradient(135deg, #050505, #0a0a0a);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #eee;
+      overflow: hidden;
+    }
+    .login-container {
+      background: rgba(20, 24, 35, 0.75);
+      backdrop-filter: blur(16px);
+      border-radius: 18px;
+      box-shadow: 0 0 30px rgba(0, 217, 255, 0.1);
+      padding: 40px 30px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      animation: fadeInUp 1.2s ease forwards;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .login-container img.logo {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 20px;
+      border: 3px solid #4ea8ff;
+      box-shadow: 0 0 20px #00c9ff55;
+    }
+    .login-container h2 {
+      color: #4ea8ff;
+      margin-bottom: 25px;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+    .input-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .input-box input {
+      width: 100%;
+      padding: 12px 16px 12px 40px;
+      border: 2px solid #3b90b8;
+      border-radius: 12px;
+      background: rgba(10, 20, 35, 0.7);
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+    }
+    .input-box input:focus {
+      border-color: #00e0ff;
+    }
+    .input-box i {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+      color: #4ea8ff;
+    }
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #00c9ff, #4ea8ff);
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(0, 217, 255, 0.4);
+      transition: transform 0.2s;
+    }
+    .login-btn:hover {
+      transform: scale(1.03);
+    }
+    .login-btn:disabled {
+      background: #555;
+      cursor: not-allowed;
+      transform: none;
+    }
+    #errorMsg, #loadingMsg, #successMsg {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    #errorMsg { color: #ff4b4b; }
+    #loadingMsg { color: #00e0ff; }
+    #successMsg { color: #55ff99; }
+    #device-info {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #4ea8ff;
+    }
+    #blockMsg { 
+      color: #ff4b4b;
+      margin-top: 15px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #00e0ff;
+      border-top: 3px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 6px;
+    }
+    .social-icons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .social-icons a {
+      color: #4ea8ff;
+      font-size: 20px;
+      transition: color 0.2s;
+    }
+    .social-icons a:hover {
+      color: #00e0ff;
+    }
+
+    /* Dashboard Page Styles */
+    .dashboard-view {
+      font-family: 'El Messiri', sans-serif;
+      background: linear-gradient(135deg, #000000, #1a1a1a);
+      color: #e0e7ff;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .card {
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .history-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 4px solid;
+      background: #111;
+      border-radius: 6px;
+    }
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <!-- Login View -->
+  <div class="login-view" id="loginView">
+    <div class="login-container">
+      <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/1e994fe1-b4d8-41f5-906d-e554708405ed.png" alt="NXT AI logo" class="logo">
+      <h2>NXT AI</h2>
+      <div class="input-box">
+        <i class="fas fa-key"></i>
+        <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19">
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="validateLicenseKey()">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+      <div id="errorMsg"></div>
+      <div id="loadingMsg" style="display:none;"><span class="spinner"></span>Checking license...</div>
+      <div id="successMsg" style="display:none;">License verified. Loading...</div>
+      <div id="blockMsg" style="display:none;"></div>
+      <div class="social-icons">
+        <a href="https://t.me/NXTxTRADER" target="_blank" title="Telegram"><i class="fab fa-telegram"></i></a>
+        <a href="https://www.youtube.com/@NXT_AI-1" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard View -->
+  <div class="dashboard-view" id="dashboardView" style="display:none;">
+    <div class="max-w-4xl mx-auto space-y-6">
+      <header class="text-center">
+        <h1 class="text-4xl font-bold text-indigo-400">NXT AI</h1>
+        <p class="text-sm text-gray-400" id="istTime">IST: --</p>
+      </header>
+      <div class="card p-4 rounded-xl shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h2 class="text-xl font-semibold">Period</h2>
+            <p id="period" class="text-xl font-bold bg-gray-800 p-3 text-center rounded-lg">Loading...</p>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold">Prediction</h2>
+            <p id="bs_result" class="text-2xl font-bold text-yellow-300 text-center p-3 bg-gray-800 rounded-lg">---</p>
+            <p class="text-sm text-center text-gray-400 mt-1">Confidence: <span id="bs_conf">--</span></p>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 mt-1">
+              <div id="confidenceFill" class="bg-indigo-500 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+            <p id="pausedNotice" class="text-center text-sm text-red-400 mt-2 hidden">⏸️ Prediction Paused</p>
+          </div>
+        </div>
+      </div>
+      <div class="card p-4 rounded-xl">
+        <h2 class="text-lg font-semibold mb-3 text-indigo-300">Prediction History</h2>
+        <div id="history" class="max-h-72 overflow-y-auto">
+          <div id="noHistory" class="text-gray-500">No history yet</div>
+        </div>
+      </div>
+      <div class="card p-4 rounded-xl grid grid-cols-3 text-center text-sm text-gray-300">
+        <div>Total: <span id="totalBets">0</span></div>
+        <div>Win: <span id="bs_win">0</span></div>
+        <div>Loss: <span id="bs_loss">0</span></div>
+        <div class="col-span-3 mt-2">Win Rate: <span id="bs_rate">0%</span></div>
+      </div>
+      <audio id="winSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_91b8ab7c7b.mp3"></audio>
+      <audio id="lossSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_f82f5da4dc.mp3"></audio>
+    </div>
+  </div>
+
+  <!-- Firebase and Login Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnjAp1kTAHW2-Le1lJJ_Q3BsAnJvw2w6Y",
+      authDomain: "nxt-ai-88834.firebaseapp.com",
+      projectId: "nxt-ai-88834",
+      storageBucket: "nxt-ai-88834.appspot.com",
+      messagingSenderId: "516840557346",
+      appId: "1:516840557346:web:8acf74c22a2e4870c2b37b",
+      measurementId: "G-HVFJ9J45RT"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const analytics = firebase.analytics();
+
+    const licenseInput = document.getElementById("licenseKey");
+    const loginBtn = document.getElementById("loginBtn");
+    const errorMsg = document.getElementById("errorMsg");
+    const loadingMsg = document.getElementById("loadingMsg");
+    const successMsg = document.getElementById("successMsg");
+    const blockMsg = document.getElementById("blockMsg");
+
+    // Attempt tracking configuration
+    const maxAttempts = 3;
+    const blockDuration = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const attemptsKey = 'loginAttempts';
+    const blockTimeKey = 'blockTime';
+    const lastAttemptKey = 'lastAttempt';
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      checkLoginStatus();
+    });
+
+    function checkLoginStatus() {
+      if (isBlocked()) {
+        const remainingTime = getRemainingBlockTime();
+        updateBlockUI(remainingTime);
+      }
+    }
+
+    function isBlocked() {
+      const blockTime = localStorage.getItem(blockTimeKey);
+      if (blockTime) {
+        const timeElapsed = Date.now() - parseInt(blockTime);
+        if (timeElapsed < blockDuration) {
+          return true;
+        } else {
+          localStorage.removeItem(attemptsKey);
+          localStorage.removeItem(blockTimeKey);
+          localStorage.removeItem(lastAttemptKey);
+        }
+      }
+      return false;
+    }
+
+    function getRemainingBlockTime() {
+      const blockTime = localStorage.getItem(blockTimeKey);
+      if (!blockTime) return 0;
+      const timeElapsed = Date.now() - parseInt(blockTime);
+      return Math.max(0, Math.ceil((blockDuration - timeElapsed) / 1000 / 60));
+    }
+
+    function updateBlockUI(minutes) {
+      loginBtn.disabled = true;
+      blockMsg.style.display = 'block';
+      blockMsg.textContent = `Too many failed attempts. Try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`;
+      
+      const interval = setInterval(() => {
+        const remaining = getRemainingBlockTime();
+        if (remaining <= 0) {
+          clearInterval(interval);
+          loginBtn.disabled = false;
+          blockMsg.style.display = 'none';
+        } else {
+          blockMsg.textContent = `Too many failed attempts. Try again in ${remaining} minute${remaining !== 1 ? 's' : ''}.`;
+        }
+      }, 60000);
+    }
+
+    // Handle key formatting
+    licenseInput.addEventListener("input", (e) => {
+      let value = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      if (value.length > 16) value = value.slice(0, 16);
+      let formatted = value.match(/.{1,4}/g)?.join("-") ?? "";
+      e.target.value = formatted;
+    });
+
+    // Handle Enter key press
+    licenseInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        validateLicenseKey();
+      }
+    });
+
+    // Generate a stable device ID
+    function generateDeviceId() {
+      const fingerprint = [
+        navigator.userAgent,
+        navigator.platform,
+        screen.width,
+        screen.height,
+        navigator.language
+      ].join('|');
+      let hash = 0;
+      for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return 'device-' + Math.abs(hash).toString(36);
+    }
+
+    // Validate license key and show dashboard
+    window.validateLicenseKey = function() {
+      if (isBlocked()) {
+        const remainingTime = getRemainingBlockTime();
+        blockMsg.textContent = `Too many failed attempts. Try again in ${remainingTime} minute${remainingTime !== 1 ? 's' : ''}.`;
+        return;
+      }
+
+      errorMsg.textContent = "";
+      blockMsg.style.display = "none";
+      successMsg.style.display = "none";
+      loadingMsg.style.display = "block";
+      loginBtn.disabled = true;
+
+      const enteredKey = licenseInput.value.trim().toUpperCase();
+
+      if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(enteredKey)) {
+        loadingMsg.style.display = "none";
+        loginBtn.disabled = false;
+        errorMsg.textContent = "Invalid format. Use: XXXX-XXXX-XXXX-XXXX";
+        return;
+      }
+
+      const currentDeviceId = generateDeviceId();
+      sessionStorage.setItem('currentDeviceId', currentDeviceId);
+
+      const keysRef = firebase.database().ref('keys');
+      keysRef.orderByChild('value').equalTo(enteredKey).once('value').then(snapshot => {
+        loadingMsg.style.display = "none";
+        loginBtn.disabled = false;
+        if (snapshot.exists()) {
+          snapshot.forEach(childSnapshot => {
+            const key = childSnapshot.val();
+            const now = Date.now();
+            
+            if (key.active && key.expiresAt > now) {
+              if (key.deviceId && key.deviceId !== currentDeviceId) {
+                errorMsg.textContent = "This key is already bound to another device.";
+                return;
+              }
+              keysRef.child(childSnapshot.key).update({ deviceId: currentDeviceId });
+              localStorage.removeItem(attemptsKey);
+              localStorage.removeItem(blockTimeKey);
+              localStorage.removeItem(lastAttemptKey);
+              
+              successMsg.style.display = "block";
+              setTimeout(() => {
+                document.getElementById('loginView').style.display = 'none';
+                document.getElementById('dashboardView').style.display = 'block';
+                initializeDashboard(); // Start dashboard logic
+              }, 2000);
+            } else {
+              handleFailedAttempt();
+            }
+          });
+        } else {
+          handleFailedAttempt();
+        }
+      }).catch(error => {
+        loadingMsg.style.display = "none";
+        loginBtn.disabled = false;
+        errorMsg.textContent = "Error validating key: " + error.message;
+      });
+    }
+
+    function handleFailedAttempt() {
+      let attempts = parseInt(localStorage.getItem(attemptsKey)) || 0;
+      attempts++;
+      localStorage.setItem(attemptsKey, attempts);
+      localStorage.setItem(lastAttemptKey, Date.now());
+
+      if (attempts >= maxAttempts) {
+        localStorage.setItem(blockTimeKey, Date.now());
+        const remainingTime = getRemainingBlockTime();
+        updateBlockUI(remainingTime);
+      } else {
+        errorMsg.textContent = `Invalid or expired key. ${maxAttempts - attempts} attempt${maxAttempts - attempts !== 1 ? 's' : ''} remaining.`;
+      }
+    }
+  </script>
+
+  <!-- Dashboard Scripts -->
+  <script>
+    function initializeDashboard() {
+      function getType(num) {
+        return num >= 5 ? "BIG" : "SMALL";
+      }
+
+      function detectAlternating(seq) {
+        for (let i = 1; i < seq.length; i++) {
+          if (seq[i] === seq[i - 1]) return null;
+        }
+        return seq[0] === "BIG" ? "SMALL" : "BIG";
+      }
+
+      function advancedBigSmallPrediction(numbers) {
+        const bsSeq = numbers.map(getType);
+
+        const majority = bsSeq.slice(0, 5).filter(v => v === "BIG").length > 2 ? "BIG" : "SMALL";
+        const last3 = bsSeq.slice(0, 3);
+        const streakFlip = (last3[0] === last3[1] && last3[1] === last3[2])
+          ? (last3[0] === "BIG" ? "SMALL" : "BIG")
+          : last3[0];
+        const altPattern = last3[0] !== last3[1] && last3[1] !== last3[2] ? "SMALL" : last3[0];
+        const lastNum = numbers[0];
+        const lastBias = lastNum >= 9 ? "SMALL" : lastNum <= 1 ? "BIG" : getType(lastNum);
+        const bigCount = bsSeq.filter(v => v === "BIG").length;
+        const freqBias = bigCount > 6 ? "SMALL" : bigCount < 4 ? "BIG" : bsSeq[0];
+
+        const seqStr = bsSeq.slice(0, 6).join('');
+        let patternBias = bsSeq[0];
+        for (let i = 0; i <= seqStr.length - 6; i++) {
+          const pat = seqStr.substr(i, 3);
+          const rest = seqStr.substr(i + 3);
+          if (rest.includes(pat)) {
+            patternBias = pat[0] === "BIG" ? "SMALL" : "BIG";
+            break;
+          }
+        }
+
+        const trend = numbers[0] > numbers[1] && numbers[1] > numbers[2] ? "DOWN" :
+                      numbers[0] < numbers[1] && numbers[1] < numbers[2] ? "UP" : null;
+        const trendBias = trend === "UP" ? "BIG" : trend === "DOWN" ? "SMALL" : bsSeq[0];
+
+        const revMomentum = (
+          numbers[0] > numbers[1] &&
+          numbers[1] > numbers[2] &&
+          numbers[2] > numbers[3]
+        ) ? "BIG" :
+        (
+          numbers[0] < numbers[1] &&
+          numbers[1] < numbers[2] &&
+          numbers[2] < numbers[3]
+        ) ? "SMALL" : bsSeq[0];
+
+        const oddEvenBias = numbers.slice(0, 6).reduce((acc, num) => {
+          num % 2 === 0 ? acc.even++ : acc.odd++;
+          return acc;
+        }, { odd: 0, even: 0 });
+        const parityBias = oddEvenBias.even > oddEvenBias.odd ? "BIG" : "SMALL";
+
+        const centerBias = numbers.slice(0, 6).filter(n => n >= 3 && n <= 6).length > 3 ? "SMALL" : "BIG";
+
+        const altBias = detectAlternating(bsSeq.slice(0, 6));
+
+        const votes = [
+          { logic: majority, weight: 1.2 },
+          { logic: streakFlip, weight: 1.0 },
+          { logic: altPattern, weight: 0.8 },
+          { logic: lastBias, weight: 0.7 },
+          { logic: freqBias, weight: 1.3 },
+          { logic: patternBias, weight: 1.5 },
+          { logic: trendBias, weight: 1.1 },
+          { logic: revMomentum, weight: 1.0 },
+          { logic: parityBias, weight: 0.9 },
+          { logic: centerBias, weight: 1.0 }
+        ];
+
+        if (altBias) votes.push({ logic: altBias, weight: 1.4 });
+
+        const voteScore = { BIG: 0, SMALL: 0 };
+        votes.forEach(v => voteScore[v.logic] += v.weight);
+
+        let final = voteScore.BIG > voteScore.SMALL ? "BIG" : "SMALL";
+
+        if (highConfLossStreak >= 1 && Math.random() < 0.3) {
+          final = final === "BIG" ? "SMALL" : "BIG";
+        }
+
+        const totalWeight = voteScore.BIG + voteScore.SMALL;
+        const confidence = Math.round((Math.max(voteScore.BIG, voteScore.SMALL) / totalWeight) * 100);
+
+        return {
+          type: final,
+          bsConf: confidence
+        };
+      }
+
+      function updatePredictionDisplay(pred) {
+        bs_result.textContent = pred.type;
+        bs_conf.textContent = pred.bsConf + "%";
+        confidenceFill.style.width = pred.bsConf + "%";
+        document.getElementById("pausedNotice").classList.toggle("hidden", !predictionPaused);
+      }
+
+      function updateStats() {
+        document.getElementById("totalBets").textContent = totalBets;
+        document.getElementById("bs_win").textContent = bsWins;
+        document.getElementById("bs_loss").textContent = bsLosses;
+        const rate = (bsWins + bsLosses) ? Math.round((bsWins / (bsWins + bsLosses)) * 100) : 0;
+        document.getElementById("bs_rate").textContent = rate + "%";
+      }
+
+      function updateHistory(issue, pred, actual) {
+        const bsActual = getType(actual);
+        const bsWin = pred.type === bsActual;
+
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.style.borderLeftColor = bsWin ? "#22c55e" : "#ef4444";
+        item.innerHTML = `
+          <div class="text-xs text-gray-400">Period: ${issue}</div>
+          <div>Predicted: <span class="${bsWin ? 'green' : 'red'}">${pred.type}</span></div>
+          <div>Actual: ${actual} - <span class="${bsWin ? 'green' : 'red'}">${bsActual}</span></div>`;
+
+        if (document.getElementById("noHistory")) document.getElementById("noHistory").remove();
+        historyElem.prepend(item);
+
+        totalBets++;
+        if (bsWin) bsWins++; else bsLosses++;
+
+        if (pred.bsConf >= 90) {
+          if (!bsWin) highConfLossStreak++;
+          else highConfWinCount++;
+
+          if (highConfLossStreak >= 2) {
+            alert("⚠️ High confidence prediction failed twice.");
+            highConfLossStreak = 0;
+          }
+
+          if (highConfWinCount >= 20) {
+            predictionPaused = true;
+            alert("✅ 20 high confidence wins. Pausing for 1 hour.");
+            setTimeout(() => {
+              predictionPaused = false;
+              alert("⏳ Prediction resumed.");
+            }, 3600000);
+          }
+        }
+
+        playFeedback(bsWin);
+        if (historyElem.children.length > 30) historyElem.removeChild(historyElem.lastChild);
+        updateStats();
+      }
+
+      function playFeedback(win) {
+        (win ? winSound : lossSound).play();
+        if (navigator.vibrate) navigator.vibrate(win ? 200 : [100, 100, 100]);
+      }
+
+      function fetchData() {
+        if (predictionPaused) return;
+        fetch("https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json")
+          .then(r => r.json())
+          .then(data => {
+            const list = data?.data?.list;
+            if (!list || list.length < 10) return;
+
+            const latest = list[0];
+            const actual = parseInt(latest.number);
+
+            const nowIST = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+            const istMinute = new Date(nowIST).getMinutes();
+
+            if (latest.issueNumber !== lastIssue && istMinute !== lastISTMinute) {
+              lastISTMinute = istMinute;
+
+              if (lastIssue && pendingPrediction) {
+                updateHistory(latest.issueNumber, pendingPrediction, actual);
+              }
+
+              const recent = list.slice(0, 10).map(x => parseInt(x.number));
+              const pred = advancedBigSmallPrediction(recent);
+              pendingPrediction = pred;
+              updatePredictionDisplay(pred);
+              lastIssue = latest.issueNumber;
+
+              const currentPeriod = (parseInt(latest.issueNumber.slice(-5)) + 1).toString().padStart(5, '0');
+              document.getElementById("period").innerText = currentPeriod;
+            }
+          })
+          .catch(console.error);
+      }
+
+      function updateIST() {
+        const now = new Date().toLocaleString("en-GB", {
+          timeZone: "Asia/Kolkata",
+          hour12: false,
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+        document.getElementById("istTime").textContent = `IST: ${now}`;
+      }
+
+      let lastIssue = null;
+      let totalBets = 0, bsWins = 0, bsLosses = 0;
+      let pendingPrediction = null;
+      let highConfLossStreak = 0;
+      let highConfWinCount = 0;
+      let predictionPaused = false;
+      let lastISTMinute = null;
+
+      const bs_result = document.getElementById("bs_result"),
+            bs_conf = document.getElementById("bs_conf"),
+            historyElem = document.getElementById("history"),
+            confidenceFill = document.getElementById("confidenceFill"),
+            winSound = document.getElementById("winSound"),
+            lossSound = document.getElementById("lossSound");
+
+      updateStats();
+      fetchData();
+      setInterval(fetchData, 60000);
+      setInterval(updateIST, 1000);
+    }
+  </script>
+</body>
+</html>
