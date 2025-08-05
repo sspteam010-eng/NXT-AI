@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NXT AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'El Messiri', sans-serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      position: relative;
+      background: #f5f7fa;
+      color: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #webgl-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #particles-js {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      display: none;
+    }
+
+    .gradient-overlay {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, rgba(0, 102, 255, 0.1) 0%, transparent 70%);
+      animation: pulseGradient 15s ease-in-out infinite;
+      z-index: 1;
+      opacity: 0.3;
+    }
+
+    @keyframes pulseGradient {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.15); opacity: 0.5; }
+    }
+
+    .shooting-stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .star {
+      position: absolute;
+      width: 3px;
+      height: 100px;
+      background: linear-gradient(-45deg, #0066ff, transparent);
+      animation: shoot 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      opacity: 0.8;
+      will-change: transform, opacity;
+    }
+
+    .star:nth-child(1) { top: 10%; left: 90%; animation-delay: 0s; animation-duration: 2.8s; }
+    .star:nth-child(2) { top: 60%; left: 20%; animation-delay: 0.7s; animation-duration: 2.3s; }
+    .star:nth-child(3) { top: 5%; left: 65%; animation-delay: 1.1s; animation-duration: 3.2s; }
+    .star:nth-child(4) { top: 80%; left: 75%; animation-delay: 1.9s; animation-duration: 2.5s; }
+
+    @keyframes shoot {
+      0% { transform: translate(0, 0) rotate(-45deg); opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { transform: translate(-600px, 600px) rotate(-45deg); opacity: 0; }
+    }
+
+    .login-container, .dashboard-container {
+      position: relative;
+      z-index: 3;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 40px rgba(0, 102, 255, 0.2), inset 0 0 10px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      padding: 35px;
+      width: 90%;
+      max-width: 420px;
+      text-align: center;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease;
+      display: none;
+    }
+
+    .login-container.active, .dashboard-container.active {
+      display: block;
+      transform: scale(1);
+      opacity: 1;
+      animation: zoomIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .login-container:hover, .dashboard-container:hover {
+      transform: scale(1.03);
+      box-shadow: 0 12px 50px rgba(0, 102, 255, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes zoomIn {
+      0% {
+        transform: scale(0.7) translateY(20px);
+        opacity: 0;
+      }
+      60% {
+        transform: scale(1.05);
+        opacity: 0.9;
+      }
+      100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .login-container img.logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid #0066ff;
+      box-shadow: 0 0 25px #0066ffaa, 0 0 50px #0066ff44, inset 0 0 10px #0066ff22;
+      margin-bottom: 25px;
+      animation: rotateGlow 4s ease-in-out infinite;
+      transform: perspective(500px) rotateY(0deg);
+    }
+
+    @keyframes rotateGlow {
+      0%, 100% { box-shadow: 0 0 25px #0066ffaa, 0 0 50px #0066ff44, inset 0 0 10px #0066ff22; transform: perspective(500px) rotateY(0deg); }
+      50% { box-shadow: 0 0 35px #0066ffcc, 0 0 70px #0066ff66, inset 0 0 15px #0066ff33; transform: perspective(500px) rotateY(10deg); }
+    }
+
+    .login-container h2 {
+      color: #0066ff;
+      font-size: 32px;
+      margin-bottom: 25px;
+      text-shadow: 0 0 10px rgba(0, 102, 255, 0.3);
+    }
+
+    .input-box {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    .input-box input {
+      width: 100%;
+      padding: 14px 16px 14px 48px;
+      border: 2px solid #3b90b8;
+      border-radius: 14px;
+      background: rgba(230, 230, 230, 0.7);
+      color: #1a1a1a;
+      font-size: 16px;
+      transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .input-box input:focus {
+      border-color: #0066ff;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+    }
+
+    .input-box i {
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      transform: translateY(-50%);
+      color: #0066ff;
+      font-size: 18px;
+    }
+
+    .login-btn, .btn-logout {
+      position: relative;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+      will-change: transform, box-shadow;
+    }
+
+    .login-btn {
+      background: linear-gradient(135deg, #0066ff, #3b90b8);
+      color: white;
+      box-shadow: 0 0 20px rgba(0, 102, 255, 0.4);
+    }
+
+    .login-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(0, 102, 255, 0.6);
+    }
+
+    .btn-logout {
+      background: linear-gradient(90deg, #888, #aaa);
+      color: white;
+    }
+
+    .btn-logout:hover {
+      transform: scale(1.05);
+      background: linear-gradient(90deg, #666, #888);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .login-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .ripple {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 50%;
+      transform: scale(0);
+      animation: rippleEffect 0.6s linear;
+      pointer-events: none;
+    }
+
+    @keyframes rippleEffect {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    #errorMsg, #loadingMsg, #successMsg, #blockMsg {
+      margin-top: 12px;
+      font-size: 14px;
+      text-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    #errorMsg { color: #ff3333; }
+    #loadingMsg { color: #0066ff; }
+    #successMsg { color: #33cc33; }
+    #blockMsg { color: #ff3333; }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 4px solid #0066ff;
+      border-top: 4px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .social-icons {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+    }
+
+    .social-icons a {
+      color: #0066ff;
+      font-size: 22px;
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+
+    .social-icons a:hover {
+      color: #0033cc;
+      transform: scale(1.2);
+    }
+
+    .dashboard-container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 35px 30px;
+      max-width: 420px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0066ff;
+      margin-bottom: 12px;
+      text-shadow: 0 0 10px rgba(0, 102, 255, 0.3);
+    }
+
+    .subtitle {
+      color: #4a4a4a;
+      font-size: 15px;
+      margin-bottom: 25px;
+    }
+
+    .field {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      font-size: 15px;
+      margin-bottom: 6px;
+      color: #666;
+      display: block;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: #e6e6e6;
+      color: #0066ff;
+      font-size: 15px;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 102, 255, 0.1);
+    }
+
+    @media (max-width: 400px) {
+      .login-container, .dashboard-container {
+        padding: 25px;
+        max-width: 95%;
+      }
+      #webgl-bg, #particles-js {
+        display: none;
+      }
+      .gradient-overlay {
+        opacity: 0.2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="webgl-bg"></canvas>
+  <div id="particles-js"></div>
+  <div class="gradient-overlay"></div>
+  <div class="shooting-stars">
+    <div class="star"></div>
+    <div class="star"></div>
+    <div class="star"></div>
+    <div class="star"></div>
+  </div>
+
+  <!-- Login Container -->
+  <div class="login-container active">
+    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/1e994fe1-b4d8-41f5-906d-e554708405ed.png" class="logo" alt="NXT AI logo with glowing blue design">
+    <h2>NXT AI</h2>
+    <p class="text-xs text-gray-600 mb-4">Please enter your license key to access the app.</p>
+    <div class="input-box">
+      <i class="fas fa-key"></i>
+      <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" aria-label="Enter license key">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="validateLicenseKey()">
+      <i class="fas fa-sign-in-alt"></i> Login
+    </button>
+    <div id="errorMsg"></div>
+    <div id="loadingMsg" style="display:none;"><span class="spinner"></span>Checking license...</div>
+    <div id="successMsg" style="display:none;">License verified. Loading...</div>
+    <div id="blockMsg" style="display:none;"></div>
+    <div class="social-icons">
+      <a href="https://t.me/NXTxTRADER" target="_blank" title="Telegram" aria-label="Visit Telegram"><i class="fab fa-telegram"></i></a>
+      <a href="https://www.youtube.com/@NXT_AI-1" target="_blank" title="YouTube" aria-label="Visit YouTube"><i class="fab fa-youtube"></i></a>
+    </div>
+    <div class="text-center mt-4">
+      <button id="toggleGraphics" class="text-xs text-gray-600 hover:text-black transition-colors">Toggle High Quality Graphics</button>
+    </div>
+  </div>
+
+  <!-- Dashboard Container -->
+  <div class="dashboard-container">
+    <div class="title">ADVANCE</div>
+    <div class="subtitle">Key Valid for 0 days</div>
+    <div class="field">
+      <label>🔑 License Key:</label>
+      <input type="text" id="dashboardLicenseKey" value="N/A" readonly aria-label="License Key" />
+    </div>
+    <div class="field">
+      <label>📱 Device ID:</label>
+      <input type="text" id="dashboardDeviceId" value="N/A" readonly aria-label="Device ID" />
+    </div>
+    <div class="field">
+      <label>📅 Expires:</label>
+      <input type="text" id="dashboardExpiresAt" value="N/A" readonly aria-label="Expiration Date" />
+    </div>
+    <button class="login-btn" onclick="window.location.href='prediction.html'">🎮 START GAME</button>
+    <button class="btn-logout" onclick="logout()">⬅️ LOGOUT</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script>
+    // WebGL Starfield
+    function initWebGL() {
+      const canvas = document.getElementById('webgl-bg');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.position.z = 50;
+
+      const starsGeometry = new THREE.BufferGeometry();
+      const starCount = 2000;
+      const positions = new Float32Array(starCount * 3);
+      const colors = new Float32Array(starCount * 3);
+
+      for (let i = 0; i < starCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 200;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+        colors[i * 3] = Math.random() * 0.5 + 0.5;
+        colors[i * 3 + 1] = Math.random() * 0.5 + 0.8;
+        colors[i * 3 + 2] = 1;
+      }
+
+      starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      const starsMaterial = new THREE.PointsMaterial({ size: 0.5, vertexColors: true, sizeAttenuation: true });
+      const starField = new THREE.Points(starsGeometry, starsMaterial);
+      scene.add(starField);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        starField.rotation.y += 0.0005;
+        starField.rotation.x += 0.0002;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    // Particles.js fallback
+    function initParticles() {
+      particlesJS("particles-js", {
+        particles: {
+          number: { value: 20, density: { enable: true, value_area: 800 } },
+          color: { value: ["#0066ff", "#3b90b8", "#8bd6ff"] },
+          shape: { type: "circle" },
+          opacity: { value: 0.5, random: true, anim: { enable: true, speed: 0.5, opacity_min: 0.2 } },
+          size: { value: 2, random: true },
+          line_linked: {
+            enable: true,
+            distance: 120,
+            color: "#0066ff",
+            opacity: 0.2,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 1.5,
+            direction: "none",
+            random: true,
+            straight: false,
+            out_mode: "out"
+          }
+        },
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: true, mode: "grab" },
+            onclick: { enable: true, mode: "push" },
+            resize: true
+          },
+          modes: {
+            grab: { distance: 150, line_linked: { opacity: 0.3 } },
+            push: { particles_nb: 3 }
+          }
+        },
+        retina_detect: true
+      });
+    }
+
+    // Graphics toggle
+    const isMobile = window.innerWidth <= 400;
+    let isHighGraphics = !isMobile && localStorage.getItem("highGraphics") !== "false";
+    const webglCanvas = document.getElementById("webgl-bg");
+    const particlesCanvas = document.getElementById("particles-js");
+    const gradientOverlay = document.querySelector(".gradient-overlay");
+    const stars = document.querySelector(".shooting-stars");
+
+    function updateGraphicsMode() {
+      if (isHighGraphics) {
+        webglCanvas.style.display = 'block';
+        particlesCanvas.style.display = 'none';
+        gradientOverlay.style.opacity = '0.3';
+        stars.style.display = 'block';
+        initWebGL();
+      } else {
+        webglCanvas.style.display = 'none';
+        particlesCanvas.style.display = 'block';
+        gradientOverlay.style.opacity = '0.2';
+        stars.style.display = 'none';
+        initParticles();
+      }
+      localStorage.setItem("highGraphics", isHighGraphics);
+    }
+
+    document.getElementById("toggleGraphics").addEventListener("click", () => {
+      isHighGraphics = !isHighGraphics;
+      updateGraphicsMode();
+    });
+
+    // Initialize graphics
+    updateGraphicsMode();
+
+    // Ripple effect for buttons
+    function createRipple(event) {
+      const button = event.currentTarget;
+      const ripple = document.createElement("span");
+      ripple.classList.add("ripple");
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+      ripple.style.width = ripple.style.height = `${diameter}px`;
+      const rect = button.getBoundingClientRect();
+      ripple.style.left = `${event.clientX - rect.left - radius}px`;
+      ripple.style.top = `${event.clientY - rect.top - radius}px`;
+      button.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    }
+
+    document.querySelectorAll(".login-btn, .btn-logout").forEach(btn => {
+      btn.addEventListener("click", createRipple);
+    });
+
+    // Firebase initialization
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnjAp1kTAHW2-Le1lJJ_Q3BsAnJvw2w6Y",
+      authDomain: "nxt-ai-88834.firebaseapp.com",
+      projectId: "nxt-ai-88834",
+      storageBucket: "nxt-ai-88834.appspot.com",
+      messagingSenderId: "516840557346",
+      appId: "1:516840557346:web:8acf74c22a2e4870c2b37b",
+      measurementId: "G-HVFJ9J45RT"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // DOM elements
+    const licenseInput = document.getElementById("licenseKey");
+    const loginBtn = document.getElementById("loginBtn");
+    const errorMsg = document.getElementById("errorMsg");
+    const loadingMsg = document.getElementById("loadingMsg");
+    const successMsg = document.getElementById("successMsg");
+    const blockMsg = document.getElementById("blockMsg");
+    const loginContainer = document.querySelector(".login-container");
+    const dashboardContainer = document.querySelector(".dashboard-container");
+    const dashboardLicenseKey = document.getElementById("dashboardLicenseKey");
+    const dashboardDeviceId = document.getElementById("dashboardDeviceId");
+    const dashboardExpiresAt = document.getElementById("dashboardExpiresAt");
+    const subtitle = document.querySelector(".subtitle");
+
+    // Session state
+    let currentLicenseKey = null;
+
+    // Login logic
+    const maxAttempts = 3;
+    const blockDuration = 30 * 60 * 1000;
+    const attemptsKey = 'loginAttempts';
+    const blockTimeKey = 'blockTime';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const storedLicenseKey = localStorage.getItem('licenseKey');
+      const storedDeviceId = localStorage.getItem('deviceId');
+      if (storedLicenseKey && storedDeviceId && !isBlocked()) {
+        validateStoredLicenseKey(storedLicenseKey, storedDeviceId);
+      } else {
+        localStorage.removeItem('licenseKey');
+        localStorage.removeItem('gameStats');
+        loginContainer.classList.add("active");
+        dashboardContainer.classList.remove("active");
+      }
+    });
+
+    function isBlocked() {
+      const blockTime = localStorage.getItem(blockTimeKey);
+      if (!blockTime) return false;
+      const elapsed = Date.now() - parseInt(blockTime);
+      if (elapsed < blockDuration) return true;
+      localStorage.removeItem(attemptsKey);
+      localStorage.removeItem(blockTimeKey);
+      return false;
+    }
+
+    function getRemainingBlockTime() {
+      const blockTime = localStorage.getItem(blockTimeKey);
+      if (!blockTime) return 0;
+      const elapsed = Date.now() - parseInt(blockTime);
+      return Math.max(0, Math.ceil((blockDuration - elapsed) / 1000));
+    }
+
+    function updateBlockUI(seconds) {
+      loginBtn.disabled = true;
+      blockMsg.style.display = 'block';
+      const interval = setInterval(() => {
+        const remaining = getRemainingBlockTime();
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        blockMsg.textContent = `Too many attempts. Try again in ${mins}:${secs.toString().padStart(2, '0')}.`;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          localStorage.removeItem(attemptsKey);
+          localStorage.removeItem(blockTimeKey);
+          loginBtn.disabled = false;
+          blockMsg.style.display = 'none';
+        }
+      }, 1000);
+    }
+
+    function generateDeviceId() {
+      let deviceId = localStorage.getItem('deviceId');
+      if (!deviceId) {
+        const fp = [
+          navigator.userAgent,
+          navigator.platform,
+          navigator.language
+        ].join('|');
+        let hash = 0;
+        for (let i = 0; i < fp.length; i++) {
+          const char = fp.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash |= 0;
+        }
+        deviceId = 'device-' + Math.abs(hash).toString(36);
+        localStorage.setItem('deviceId', deviceId);
+      }
+      return deviceId;
+    }
+
+    function validateStoredLicenseKey(licenseKey, deviceId) {
+      const keysRef = db.ref("keys");
+      keysRef.orderByChild('value').equalTo(licenseKey).once('value', snapshot => {
+        if (snapshot.exists()) {
+          let validKey = false;
+          snapshot.forEach(child => {
+            const key = child.val();
+            const now = Date.now();
+            if (key.active && key.expiresAt > now && key.deviceId === deviceId) {
+              validKey = true;
+              const expiresDate = new Date(key.expiresAt);
+              dashboardLicenseKey.value = licenseKey;
+              dashboardDeviceId.value = deviceId;
+              dashboardExpiresAt.value = expiresDate.toLocaleString();
+              const daysRemaining = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+              subtitle.textContent = `Key Valid for ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`;
+              currentLicenseKey = licenseKey;
+              localStorage.setItem('licenseKey', licenseKey);
+              loginContainer.classList.remove("active");
+              dashboardContainer.classList.add("active");
+            }
+          });
+          if (!validKey) {
+            localStorage.removeItem('licenseKey');
+            loginContainer.classList.add("active");
+            dashboardContainer.classList.remove("active");
+            errorMsg.textContent = "Stored license key is invalid or bound to another device.";
+          }
+        } else {
+          localStorage.removeItem('licenseKey');
+          loginContainer.classList.add("active");
+          dashboardContainer.classList.remove("active");
+          errorMsg.textContent = "Stored license key is invalid.";
+        }
+      }).catch(error => {
+        console.error("Firebase error:", error);
+        errorMsg.textContent = "Failed to validate stored key. Please try again.";
+        localStorage.removeItem('licenseKey');
+        loginContainer.classList.add("active");
+        dashboardContainer.classList.remove("active");
+      });
+    }
+
+    function validateLicenseKey() {
+      if (isBlocked()) {
+        updateBlockUI(getRemainingBlockTime());
+        return;
+      }
+      errorMsg.textContent = "";
+      successMsg.style.display = "none";
+      loadingMsg.style.display = "block";
+      loginBtn.disabled = true;
+
+      const enteredKey = licenseInput.value.trim().toUpperCase();
+      if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(enteredKey)) {
+        loadingMsg.style.display = "none";
+        loginBtn.disabled = false;
+        errorMsg.textContent = "Invalid format. Use: XXXX-XXXX-XXXX-XXXX";
+        return;
+      }
+
+      const currentDeviceId = generateDeviceId();
+      const keysRef = db.ref("keys");
+
+      keysRef.orderByChild('value').equalTo(enteredKey).once('value', snapshot => {
+        loadingMsg.style.display = "none";
+        loginBtn.disabled = false;
+        if (snapshot.exists()) {
+          let validKey = false;
+          snapshot.forEach(child => {
+            const key = child.val();
+            const now = Date.now();
+            if (key.active && key.expiresAt > now) {
+              if (key.deviceId && key.deviceId !== currentDeviceId) {
+                errorMsg.textContent = "Key is bound to another device.";
+                return;
+              }
+              if (!key.deviceId) {
+                keysRef.child(child.key).update({ deviceId: currentDeviceId });
+              }
+              validKey = true;
+              const expiresDate = new Date(key.expiresAt);
+              dashboardLicenseKey.value = enteredKey;
+              dashboardDeviceId.value = currentDeviceId;
+              dashboardExpiresAt.value = expiresDate.toLocaleString();
+              const daysRemaining = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+              subtitle.textContent = `Key Valid for ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`;
+              currentLicenseKey = enteredKey;
+              localStorage.setItem('licenseKey', enteredKey);
+              localStorage.removeItem(attemptsKey);
+              localStorage.removeItem(blockTimeKey);
+              successMsg.style.display = "block";
+              setTimeout(() => {
+                loginContainer.classList.remove("active");
+                dashboardContainer.classList.add("active");
+                successMsg.style.display = "none";
+              }, 1500);
+            }
+          });
+          if (!validKey) handleFailedAttempt();
+        } else {
+          handleFailedAttempt();
+        }
+      }).catch(error => {
+        loadingMsg.style.display = "none";
+        loginBtn.disabled = false;
+        errorMsg.textContent = "Failed to validate key. Please try again later.";
+        console.error("Firebase error:", error);
+      });
+    }
+
+    function handleFailedAttempt() {
+      let attempts = parseInt(localStorage.getItem(attemptsKey)) || 0;
+      attempts++;
+      localStorage.setItem(attemptsKey, attempts);
+      if (attempts >= maxAttempts) {
+        localStorage.setItem(blockTimeKey, Date.now());
+        updateBlockUI(getRemainingBlockTime());
+      } else {
+        errorMsg.textContent = `Invalid key. ${maxAttempts - attempts} attempt(s) left.`;
+      }
+    }
+
+    function logout() {
+      loginContainer.classList.add("active");
+      dashboardContainer.classList.remove("active");
+      licenseInput.value = currentLicenseKey || "";
+      errorMsg.textContent = "";
+      successMsg.style.display = "none";
+      loadingMsg.style.display = "none";
+      blockMsg.style.display = "none";
+      loginBtn.disabled = false;
+      currentLicenseKey = null;
+    }
+
+    licenseInput.addEventListener("input", e => {
+      let val = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      if (val.length > 16) val = val.slice(0, 16);
+      e.target.value = val.match(/.{1,4}/g)?.join("-") || "";
+    });
+
+    licenseInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") validateLicenseKey();
+    });
+
+    let isDevToolsOpen = false;
+    const element = new Image();
+    Object.defineProperty(element, 'id', {
+      get: function () {
+        isDevToolsOpen = true;
+        throw new Error("Dev tools detected");
+      }
+    });
+    setInterval(() => {
+      isDevToolsOpen = false;
+      console.log(element);
+      if (isDevToolsOpen) {
+        document.body.innerHTML = "<h1 style='color: red; text-align:center; margin-top:50vh;'>Screen Recording or Debugging Blocked</h1>";
+      }
+    }, 1000);
+
+    document.addEventListener("keyup", function (e) {
+      if (e.key === "PrintScreen") {
+        navigator.clipboard.writeText("Screenshots are disabled.");
+        alert("Screenshot blocked!");
+      }
+    });
+
+    if ('mediaDevices' in navigator) {
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const screens = devices.filter(d => d.kind === 'videoinput' && d.label.toLowerCase().includes('screen'));
+        if (screens.length > 0) {
+          alert('Screen recording detected. Session blocked.');
+          document.body.innerHTML = "<h2 style='color:red; text-align:center;'>Screen recording blocked</h2>";
+        }
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>
